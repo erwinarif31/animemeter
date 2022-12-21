@@ -17,7 +17,7 @@
       flex: 1 0 21%;
       margin: 5px;
       max-width: 21%;
-      height: 480px;
+      /* height: 500px; */
     }
 
     a {
@@ -35,18 +35,25 @@
   </nav>
 
   <div class="container mt-5 w-75">
-    <form action="/" method="post" class="">
+    <form action="/" method="POST" class="">
       <div class="mb-3 d-flex">
-        <input type="text" name="title" class="form-control me-3" id="exampleFormControlInput1"
-          placeholder="name@example.com">
+        <input type="text" name="title" class="form-control me-3" id="title_search" placeholder="name@example.com"
+          value="">
+        <select class="form-select w-25" aria-label="Default select example" name="type">
+          <option value="tv">TV</option>
+          <option value="movie">Movie</option>
+          <option value="ova">OVA</option>
+          <option value="ona">ONA</option>
+          <option value="special">Special</option>
+        </select>
         <button type="submit" class="btn btn-primary ms-3">Primary</button>
       </div>
     </form>
   </div>
 
-  <div class="container-fluid mt-3 w-75 parent">
+  <div class="container-fluid mt-3 w-75 parent mx-auto">
     {%for result in output%}
-    <div class="card child px-1 pt-1 pb-3">
+    <div class="card child px-1 pt-1 pb-3 h-100">
       <form class="theForm" action="/reviews/{{result[5]}}" method="post">
         <input type="hidden" name="url" value="{{result[0]}}" id="test">
         <input type="hidden" name="title" value="{{result[2]}}" id="test">
@@ -79,7 +86,6 @@
   <script>
     $(document).on('click', '.child', function () {
       $(this).find('form').submit();
-      // console.log('test');
     })
   </script>
 </body>

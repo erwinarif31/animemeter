@@ -15,7 +15,7 @@ tf_idf = pickle.load(open(tfidffile, 'rb'))
 
 
 def review_to_words(raw_review):
-    review_text = BeautifulSoup(raw_review, 'lxml').get_text()
+    review_text = BeautifulSoup(raw_review, 'html.parser').get_text()
     letters_only = re.sub("[^a-zA-Z]", " ", review_text)
     words = letters_only.lower().split()
     stops = set(stopwords.words("english"))
@@ -23,10 +23,11 @@ def review_to_words(raw_review):
     return " ".join(meaningful_words)
 
 
-def search(input):
+def search(input, type_title):
     url = "https://api.jikan.moe/v4/anime"
 
-    querystring = {"q": input, "limit": 10}
+    querystring = {"q": input, "limit": 20,
+                   "type": type_title, "order_by": "ranking"}
 
     headers = {
         "X-RapidAPI-Key": "ef33758c26msh90b77f1145da547p18115fjsnb013a57e8018",
@@ -39,47 +40,41 @@ def search(input):
 
     results = []
     for x in output:
-        title = x['title_english']
+        title = x['titles'][0]['title']
         imgurl = x['images']['jpg']['large_image_url']
         link = x['url']
         year = x['aired']['string']
         type = x['type']
         id = x['mal_id']
         synopsis = x['synopsis']
-        japanese_title = x['title_japanese']
+        japanese_title = x['titles'][1]['title']
         results.append([link, imgurl, title, year, type,
                        id, synopsis, japanese_title])
 
     return results
 
 
-# def getReviews(titleId):
-    # start_url = 'https://www.imdb.com/title/%s/reviews?ref_=tt_urv' % titleId
-    # link = 'https://www.imdb.com/title/%s/reviews/_ajax' % titleId
+def get_reviews(soup):
+    get_reviews = soup.find_all('div', 'text')
+    return get_reviews
 
-    # params = {
-    #     'ref_': 'undefined',
-    #     'paginationKey': ''
-    # }
-    # reviews = []
-    # with requests.Session() as s:
-    #     s.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36'
-    #     res = s.get(start_url)
 
-    #     while True:
-    #         soup = BeautifulSoup(res.text, "lxml")
-    #         for item in soup.select(".review-container"):
-    #             review = item.select_one("div.show-more__control")
-    #             reviews.append(review)
-
-    #         try:
-    #             pagination_key = soup.select_one(
-    #                 ".load-more-data[data-key]").get("data-key")
-    #         except AttributeError:
-    #             break
-    #         params['paginationKey'] = pagination_key
-    #         res = s.get(link, params=params)
-    # return reviews
+def get_all_reviews(url):
+    reviews = []
+    user_agent = {'User-agent': 'Mozilla/5.0'}
+    session_object = requests.Session()
+    page = session_object.get(url, headers=user_agent)
+    soup = BeautifulSoup(page.text, 'html.parser')
+    reviews.extend(get_reviews(soup))
+    nextpage = soup.find_all(
+        attrs={"data-ga-click-type": "review-more-reviews"})
+    while (nextpage):
+        page = session_object.get(nextpage[0]['href'], headers=user_agent)
+        soup = BeautifulSoup(page.text, 'html.parser')
+        reviews.extend(get_reviews(soup))
+        nextpage = soup.find_all(
+            attrs={"data-ga-click-type": "review-more-reviews"})
+    return reviews
 
 
 app = Flask(__name__)
@@ -88,9 +83,10 @@ app = Flask(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        input = request.form['title']
+        input = request.form.get('title')
+        type_title = request.form.get('type')
 
-        output = search(input)
+        output = search(input, type_title)
 
         return render_template('index.html', output=output)
     else:
@@ -106,8 +102,23 @@ def reviews(id):
         plot = request.form['sinopsis']
         year = request.form['tahun']
         jap_title = request.form['jap_title']
+        review_url = request.form['url'] + '/reviews'
+        reviews = get_all_reviews(review_url)
 
-        return render_template('reviews.html', title=title, imgurl=imgurl, year=year, jap_title=jap_title, plot=plot)
+        clean_reviews = []
+        for i in reviews:
+            clean_reviews.append(review_to_words(i.text))
+
+        test_input = tf_idf.transform(clean_reviews)
+        good_reviews = 0
+        for review in test_input:
+            pred = model.predict(review)[0]
+            if pred == 1:
+                good_reviews += 1
+
+        good_reviews = round((good_reviews / len(clean_reviews)) * 100)
+
+        return render_template('reviews.html', title=title, imgurl=imgurl, year=year, jap_title=jap_title, plot=plot, reviews=len(reviews), rating=good_reviews)
     #     for i in reviews:
     #         test_processes = [review_to_words(i)]
     #         test_input = tf_idf.transform(test_processes)

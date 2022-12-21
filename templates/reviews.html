@@ -34,11 +34,19 @@
                 <img src="{{imgurl}}" alt="" style="width: 100%;">
             </div>
             <div class="mx-3" style="width: 80%;">
-                <h2 class="text-center">{{title}}</h2>
+                <div class="d-flex">
+                    <div class="ms-5">
+                        <h2 class="text-center">{{title}}</h2>
+                        <p class="text-center"><span class="fs6 muted">{{jap_title}}</span>
+                    </div>
+                    <div class="reviews ms-auto me-5">
+                        <h3 class="text-center">{{rating}}%</h3>
+                        <p>Total reviews: {{reviews}}</p>
+                    </div>
+                </div>
 
-                <p class="text-center"><span class="fs6 muted">{{jap_title}}</span>
+
                 <p class="text-center">{{plot}}</p>
-
             </div>
         </div>
     </div>
