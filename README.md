@@ -1,19 +1,4 @@
 # animemeter
-
-### Import Package
-```python
-from bs4 import BeautifulSoup
-import re
-from nltk.corpus import stopwords
-import nltk
-import numpy as np
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, classification_report
-from sklearn.naive_bayes import MultinomialNB
-from sklearn import metrics
-```
 ### Data
 Data terdiri dari 25000 review dari IMDB dengan label sentimen negatif atau positif.
 ```python
